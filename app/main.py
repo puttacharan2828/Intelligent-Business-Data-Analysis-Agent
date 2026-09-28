@@ -1,4 +1,5 @@
 import streamlit as st
+from data.understanding import understand_dataset
 
 from config import APP_NAME, APP_ICON, PAGE_LAYOUT
 from data.loader import load_dataset
@@ -28,22 +29,41 @@ if uploaded_file is not None:
 
     try:
         df = load_dataset(uploaded_file)
+        
+        understanding = understand_dataset(df)
+
+        profile = understanding["profile"]
+        numerical_analysis = understanding["numerical_analysis"]
+        categorical_analysis = understanding["categorical_analysis"]
+        quality_report = understanding["quality"]
+        column_classification = understanding["column_classification"]  
+
+        st.subheader("Dataset Profile")
+
+        st.write("Rows:", profile["rows"])
+        st.write("Columns:", profile["columns"])
+        st.write("Column Names:", profile["column_names"])
+        st.write("Data Types:", profile["data_types"])
+        st.write("Missing Values:", profile["missing_values"])
+        st.write("Duplicate Rows:", profile["duplicate_rows"])
+
+        st.subheader("Numerical Analysis")
+        st.dataframe(numerical_analysis)   
+
+        st.subheader("Categorical Analysis")
+        st.write(categorical_analysis) 
+
+        st.subheader("Data Quality")
+        st.write(quality_report)
+
+        st.subheader("Column Classification")
+        st.write(column_classification)
 
         st.success("Dataset uploaded successfully!")
 
         st.subheader("Dataset Preview")
 
         st.dataframe(df)
-
-        st.subheader("Dataset Information")
-
-        st.write("Number of Rows:", df.shape[0])
-        st.write("Number of Columns:", df.shape[1])
-        st.write("Column Names:", list(df.columns))
-        
-        st.write("Data Types:")
-        st.write(df.dtypes)
-
 
 
     except ValueError as e:
