@@ -1,5 +1,7 @@
 import streamlit as st
 from data.understanding import understand_dataset
+from nlu.question_parser import parse_question
+from nlu.nlu_validator import validate_nlu
 
 from config import APP_NAME, APP_ICON, PAGE_LAYOUT
 from data.loader import load_dataset
@@ -29,14 +31,14 @@ if uploaded_file is not None:
 
     try:
         df = load_dataset(uploaded_file)
-        
+
         understanding = understand_dataset(df)
 
         profile = understanding["profile"]
         numerical_analysis = understanding["numerical_analysis"]
         categorical_analysis = understanding["categorical_analysis"]
         quality_report = understanding["quality"]
-        column_classification = understanding["column_classification"]  
+        column_classification = understanding["column_classification"]
 
         st.subheader("Dataset Profile")
 
@@ -48,10 +50,10 @@ if uploaded_file is not None:
         st.write("Duplicate Rows:", profile["duplicate_rows"])
 
         st.subheader("Numerical Analysis")
-        st.dataframe(numerical_analysis)   
+        st.dataframe(numerical_analysis)
 
         st.subheader("Categorical Analysis")
-        st.write(categorical_analysis) 
+        st.write(categorical_analysis)
 
         st.subheader("Data Quality")
         st.write(quality_report)
@@ -62,9 +64,7 @@ if uploaded_file is not None:
         st.success("Dataset uploaded successfully!")
 
         st.subheader("Dataset Preview")
-
         st.dataframe(df)
-
 
     except ValueError as e:
         st.error(str(e))
@@ -72,8 +72,8 @@ if uploaded_file is not None:
     except Exception:
         st.error(
             "Something went wrong while loading the dataset. "
-             "Please check that the file is valid and try again."
-    )
+            "Please check that the file is valid and try again."
+        )
 
 
 st.header("2. Ask a Question")
@@ -87,8 +87,30 @@ analyze_button = st.button("Analyze")
 if analyze_button:
 
     if question:
-        st.success("Question submitted successfully!")
-        st.write("Your question:", question)
+
+        if uploaded_file is not None:
+
+            parsed_result = parse_question(
+                question,
+                df.columns.tolist()
+            )
+
+            validation_result = validate_nlu(
+            parsed_result,
+            df.columns.tolist()
+            )
+
+            st.success("Question submitted successfully!")
+            st.write("Your question:", question)
+
+            st.subheader("Parsed Question")
+            st.json(parsed_result)
+
+            st.subheader("NLU Validation")
+            st.json(validation_result)    
+
+        else:
+            st.warning("Please upload a dataset first.")
 
     else:
         st.warning("Please enter a question first.")
