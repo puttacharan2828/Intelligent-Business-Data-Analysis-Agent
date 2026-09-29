@@ -4,6 +4,8 @@ from nlu.question_parser import parse_question
 from nlu.nlu_validator import validate_nlu
 from agents.planner import create_analysis_plan
 from agents.plan_validator import validate_analysis_plan
+from agents.code_generator import generate_code
+from analysis.executor import execute_code
 
 from config import APP_NAME, APP_ICON, PAGE_LAYOUT
 from data.loader import load_dataset
@@ -125,6 +127,38 @@ if analyze_button:
                     "Unable to create a valid analysis plan. "
                     "Please provide more details in your question."
                 )
+
+            else:
+                generated_code = generate_code(analysis_plan.to_dict())
+
+                st.subheader("Generated Python Code")
+                st.code(generated_code, language="python")
+
+                execution_result = execute_code(
+                generated_code,
+                df
+                )
+
+                st.subheader("Execution Result")
+
+                if execution_result["success"]:
+                    st.success("Code executed successfully!")
+
+                    st.write("Result:")
+                    st.write(execution_result["result"])
+
+                    if execution_result["output"]:
+                        st.write("Output:")
+                        st.text(execution_result["output"])
+
+                else:
+                    st.error("Code execution failed.")
+
+                    st.write("Error Type:")
+                    st.write(execution_result["error_type"])
+
+                    st.write("Error:")
+                    st.write(execution_result["error"])
         else:
             st.warning("Please upload a dataset first.")
 

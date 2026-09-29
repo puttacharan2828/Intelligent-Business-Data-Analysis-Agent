@@ -20,44 +20,44 @@ def generate_code(plan):
         data = f'{data}[df["Year"] == {time}]'
 
     if analysis_type == "summary":
-        return f'{data}["{target_column}"].describe()'
+        return f'result = {data}["{target_column}"].describe()'
 
     elif analysis_type == "distribution":
-        return f'{data}["{target_column}"].describe()'
+        return f'result = {data}["{target_column}"].describe()'
 
     elif analysis_type == "aggregation":
 
         if group_by is not None:
             if operation == "sum":
-                return f'{data}.groupby("{group_by}")["{target_column}"].sum()'
+                return f'result = {data}.groupby("{group_by}")["{target_column}"].sum()'
 
             elif operation == "mean":
-                return f'{data}.groupby("{group_by}")["{target_column}"].mean()'
+                return f'result = {data}.groupby("{group_by}")["{target_column}"].mean()'
 
             elif operation == "min":
-                return f'{data}.groupby("{group_by}")["{target_column}"].min()'
+                return f'result = {data}.groupby("{group_by}")["{target_column}"].min()'
 
             elif operation == "max":
-                return f'{data}.groupby("{group_by}")["{target_column}"].max()'
+                return f'result = {data}.groupby("{group_by}")["{target_column}"].max()'
 
             elif operation == "count":
-                return f'{data}.groupby("{group_by}")["{target_column}"].count()'
+                return f'result = {data}.groupby("{group_by}")["{target_column}"].count()'
 
         else:
             if operation == "sum":
-                return f'{data}["{target_column}"].sum()'
+                return f'result = {data}["{target_column}"].sum()'
 
             elif operation == "mean":
-                return f'{data}["{target_column}"].mean()'
+                return f'result = {data}["{target_column}"].mean()'
 
             elif operation == "min":
-                return f'{data}["{target_column}"].min()'
+                return f'result = {data}["{target_column}"].min()'
 
             elif operation == "max":
-                return f'{data}["{target_column}"].max()'
+                return f'result = {data}["{target_column}"].max()'
 
             elif operation == "count":
-                return f'{data}["{target_column}"].count()'
+                return f'result = {data}["{target_column}"].count()'
 
         raise ValueError("Unsupported aggregation operation.")
 
@@ -65,7 +65,8 @@ def generate_code(plan):
         if group_by is None:
             raise ValueError("Relationship analysis requires two columns.")
 
-        return f'{data}[["{target_column}", "{group_by}"]].corr()'
+        return f'result = {data}[["{target_column}", "{group_by}"]].corr()'
 
     else:
         raise ValueError("Unsupported analysis type.")
+
