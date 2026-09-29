@@ -2,6 +2,8 @@ import streamlit as st
 from data.understanding import understand_dataset
 from nlu.question_parser import parse_question
 from nlu.nlu_validator import validate_nlu
+from agents.planner import create_analysis_plan
+from agents.plan_validator import validate_analysis_plan
 
 from config import APP_NAME, APP_ICON, PAGE_LAYOUT
 from data.loader import load_dataset
@@ -99,6 +101,9 @@ if analyze_button:
             parsed_result,
             df.columns.tolist()
             )
+            analysis_plan = create_analysis_plan(parsed_result)
+
+            plan_valid = validate_analysis_plan(analysis_plan)
 
             st.success("Question submitted successfully!")
             st.write("Your question:", question)
@@ -107,8 +112,19 @@ if analyze_button:
             st.json(parsed_result)
 
             st.subheader("NLU Validation")
-            st.json(validation_result)    
+            st.json(validation_result)  
 
+            st.subheader("Analysis Plan")
+            st.json(analysis_plan.to_dict()) 
+
+            st.subheader("Plan Validation")
+            st.write(plan_valid)
+
+            if not plan_valid:
+                st.warning(
+                    "Unable to create a valid analysis plan. "
+                    "Please provide more details in your question."
+                )
         else:
             st.warning("Please upload a dataset first.")
 
