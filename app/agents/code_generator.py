@@ -1,4 +1,5 @@
 def generate_code(plan):
+
     analysis_type = plan["analysis_type"]
     target_column = plan["target_column"]
     group_by = plan.get("group_by")
@@ -13,60 +14,128 @@ def generate_code(plan):
         filter_column = filter_condition["column"]
         filter_value = filter_condition["value"]
 
-        data = f'df[df["{filter_column}"] == "{filter_value}"]'
+        data = (
+            f'df[df["{filter_column}"].str.lower() '
+            f'== "{filter_value.lower()}"]'
+        )
 
     # Apply time filter
     if time is not None:
-        data = f'{data}[df["Year"] == {time}]'
+        data = f'{data}[{data}["Year"] == {time}]'
 
+    # ---------------------------------
+    # Summary
+    # ---------------------------------
     if analysis_type == "summary":
+
         return f'result = {data}["{target_column}"].describe()'
 
+    # ---------------------------------
+    # Distribution
+    # ---------------------------------
     elif analysis_type == "distribution":
+
         return f'result = {data}["{target_column}"].describe()'
 
+    # ---------------------------------
+    # Simple Aggregation
+    # ---------------------------------
     elif analysis_type == "aggregation":
 
-        if group_by is not None:
-            if operation == "sum":
-                return f'result = {data}.groupby("{group_by}")["{target_column}"].sum()'
+        if operation == "sum":
 
-            elif operation == "mean":
-                return f'result = {data}.groupby("{group_by}")["{target_column}"].mean()'
+            return f'result = {data}["{target_column}"].sum()'
 
-            elif operation == "min":
-                return f'result = {data}.groupby("{group_by}")["{target_column}"].min()'
+        elif operation == "mean":
 
-            elif operation == "max":
-                return f'result = {data}.groupby("{group_by}")["{target_column}"].max()'
+            return f'result = {data}["{target_column}"].mean()'
 
-            elif operation == "count":
-                return f'result = {data}.groupby("{group_by}")["{target_column}"].count()'
+        elif operation == "min":
+
+            return f'result = {data}["{target_column}"].min()'
+
+        elif operation == "max":
+
+            return f'result = {data}["{target_column}"].max()'
+
+        elif operation == "count":
+
+            return f'result = {data}["{target_column}"].count()'
 
         else:
-            if operation == "sum":
-                return f'result = {data}["{target_column}"].sum()'
 
-            elif operation == "mean":
-                return f'result = {data}["{target_column}"].mean()'
+            raise ValueError("Unsupported aggregation operation.")
 
-            elif operation == "min":
-                return f'result = {data}["{target_column}"].min()'
+    # ---------------------------------
+    # Grouped Aggregation
+    # ---------------------------------
+    elif analysis_type == "grouped_aggregation":
 
-            elif operation == "max":
-                return f'result = {data}["{target_column}"].max()'
-
-            elif operation == "count":
-                return f'result = {data}["{target_column}"].count()'
-
-        raise ValueError("Unsupported aggregation operation.")
-
-    elif analysis_type == "relationship":
         if group_by is None:
-            raise ValueError("Relationship analysis requires two columns.")
 
-        return f'result = {data}[["{target_column}", "{group_by}"]].corr()'
+            raise ValueError(
+                "Grouped aggregation requires a grouping column."
+            )
 
+        if operation == "sum":
+
+            return (
+                f'result = {data}.groupby("{group_by}")'
+                f'["{target_column}"].sum()'
+            )
+
+        elif operation == "mean":
+
+            return (
+                f'result = {data}.groupby("{group_by}")'
+                f'["{target_column}"].mean()'
+            )
+
+        elif operation == "min":
+
+            return (
+                f'result = {data}.groupby("{group_by}")'
+                f'["{target_column}"].min()'
+            )
+
+        elif operation == "max":
+
+            return (
+                f'result = {data}.groupby("{group_by}")'
+                f'["{target_column}"].max()'
+            )
+
+        elif operation == "count":
+
+            return (
+                f'result = {data}.groupby("{group_by}")'
+                f'["{target_column}"].count()'
+            )
+
+        else:
+
+            raise ValueError("Unsupported aggregation operation.")
+
+    # ---------------------------------
+    # Relationship
+    # ---------------------------------
+    elif analysis_type == "relationship":
+
+        if group_by is None:
+
+            raise ValueError(
+                "Relationship analysis requires two columns."
+            )
+
+        return (
+            f'result = {data}[["{target_column}", "{group_by}"]].corr()'
+        )
+
+    # ---------------------------------
+    # Unsupported Analysis Type
+    # ---------------------------------
     else:
-        raise ValueError("Unsupported analysis type.")
 
+        raise ValueError(
+            f"Unsupported analysis type: {analysis_type}"
+        )

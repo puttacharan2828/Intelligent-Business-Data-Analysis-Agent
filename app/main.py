@@ -6,6 +6,7 @@ from agents.planner import create_analysis_plan
 from agents.plan_validator import validate_analysis_plan
 from agents.code_generator import generate_code
 from analysis.executor import execute_code
+from visualization.visualizer import create_visualization
 
 from config import APP_NAME, APP_ICON, PAGE_LAYOUT
 from data.loader import load_dataset
@@ -100,9 +101,10 @@ if analyze_button:
             )
 
             validation_result = validate_nlu(
-            parsed_result,
-            df.columns.tolist()
+                parsed_result,
+                df.columns.tolist()
             )
+
             analysis_plan = create_analysis_plan(parsed_result)
 
             plan_valid = validate_analysis_plan(analysis_plan)
@@ -114,34 +116,39 @@ if analyze_button:
             st.json(parsed_result)
 
             st.subheader("NLU Validation")
-            st.json(validation_result)  
+            st.json(validation_result)
 
             st.subheader("Analysis Plan")
-            st.json(analysis_plan.to_dict()) 
+            st.json(analysis_plan.to_dict())
 
             st.subheader("Plan Validation")
             st.write(plan_valid)
 
             if not plan_valid:
+
                 st.warning(
                     "Unable to create a valid analysis plan. "
                     "Please provide more details in your question."
                 )
 
             else:
-                generated_code = generate_code(analysis_plan.to_dict())
+
+                generated_code = generate_code(
+                    analysis_plan.to_dict()
+                )
 
                 st.subheader("Generated Python Code")
                 st.code(generated_code, language="python")
 
                 execution_result = execute_code(
-                generated_code,
-                df
+                    generated_code,
+                    df
                 )
 
                 st.subheader("Execution Result")
 
                 if execution_result["success"]:
+
                     st.success("Code executed successfully!")
 
                     st.write("Result:")
@@ -151,7 +158,72 @@ if analyze_button:
                         st.write("Output:")
                         st.text(execution_result["output"])
 
+                    # Generate visualization
+                    try:
+
+                        analysis_type = analysis_plan.to_dict()["analysis_type"]
+                        target_column = analysis_plan.to_dict()["target_column"]
+                        group_by = analysis_plan.to_dict().get("group_by")
+
+                        # Distribution → Histogram
+                        if analysis_type == "distribution":
+
+                            fig = create_visualization(
+                                df,
+                                "distribution",
+                                y_column=target_column
+                            )
+
+                            st.subheader("Visualization")
+                            st.pyplot(fig)
+
+                        # Aggregation / Grouped Aggregation → Bar Chart
+                        elif (
+                            analysis_type in [
+                                "aggregation",
+                                "grouped_aggregation"
+                            ]
+                            and group_by is not None
+                        ):
+
+                            result_df = execution_result["result"].reset_index()
+
+                            result_df.columns = [
+                                group_by,
+                                target_column
+                            ]
+
+                            fig = create_visualization(
+                                result_df,
+                                "comparison",
+                                x_column=group_by,
+                                y_column=target_column
+                            )
+
+                            st.subheader("Visualization")
+                            st.pyplot(fig)
+
+                        # Relationship → Scatter Plot
+                        elif analysis_type == "relationship":
+
+                            fig = create_visualization(
+                                df,
+                                "relationship",
+                                x_column=group_by,
+                                y_column=target_column
+                            )
+
+                            st.subheader("Visualization")
+                            st.pyplot(fig)
+
+                    except Exception as e:
+
+                        st.warning(
+                            f"Visualization could not be generated: {str(e)}"
+                        )
+
                 else:
+
                     st.error("Code execution failed.")
 
                     st.write("Error Type:")
@@ -159,8 +231,11 @@ if analyze_button:
 
                     st.write("Error:")
                     st.write(execution_result["error"])
+
         else:
+
             st.warning("Please upload a dataset first.")
 
     else:
+
         st.warning("Please enter a question first.")
