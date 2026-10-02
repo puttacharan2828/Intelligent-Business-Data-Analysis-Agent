@@ -6,11 +6,13 @@ from agents.planner import create_analysis_plan
 from agents.plan_validator import validate_analysis_plan
 from agents.code_generator import generate_code
 from analysis.executor import execute_code
+from agents.interpreter import ResultInterpreter
 from visualization.visualizer import create_visualization
 
 from config import APP_NAME, APP_ICON, PAGE_LAYOUT
 from data.loader import load_dataset
 
+interpreter = ResultInterpreter()
 
 st.set_page_config(
     page_title=APP_NAME,
@@ -105,6 +107,11 @@ if analyze_button:
                 df.columns.tolist()
             )
 
+            if not validation_result["valid"]:
+                st.error("Could not process the question.")
+                st.write(validation_result["errors"])
+                st.stop()
+
             analysis_plan = create_analysis_plan(parsed_result)
 
             plan_valid = validate_analysis_plan(analysis_plan)
@@ -133,9 +140,14 @@ if analyze_button:
 
             else:
 
-                generated_code = generate_code(
-                    analysis_plan.to_dict()
-                )
+                try:
+                    generated_code = generate_code(
+                        analysis_plan.to_dict()
+                     )
+                except Exception as e:
+                    st.error("Unable to generate analysis code.")
+                    st.write(str(e))
+                    st.stop()
 
                 st.subheader("Generated Python Code")
                 st.code(generated_code, language="python")
@@ -149,10 +161,68 @@ if analyze_button:
 
                 if execution_result["success"]:
 
+                    plan = analysis_plan.to_dict()
+
+                    result = execution_result["result"]
+
+                    if plan.get("filter") is not None:
+                        if hasattr(result, "empty") and result.empty:
+                            st.warning("No matching records were found for the specified filter.")
+                            st.stop()
+
+                        if not hasattr(result, "empty") and result == 0:
+                            st.warning("No matching records were found for the specified filter.")
+                            st.stop()
+                        
+
                     st.success("Code executed successfully!")
 
                     st.write("Result:")
                     st.write(execution_result["result"])
+
+                    
+
+                    if plan["analysis_type"] == "grouped_aggregation":
+
+                        interpretation = interpreter.interpret_grouped(
+                            execution_result["result"],
+                            plan.get("operation"),
+                            plan.get("group_by"),
+                            plan.get("target_column")
+                        )
+
+                    else:
+
+                        interpretation = interpreter.interpret_from_plan(
+                            execution_result["result"],
+                            plan
+                        )
+
+                    st.subheader("Interpretation")
+                    st.write(interpretation)
+
+                    if plan["analysis_type"] == "grouped_aggregation":
+
+                        insight = interpreter.generate_grouped_insight(
+                            execution_result["result"],
+                            plan.get("operation"),
+                            plan.get("group_by"),
+                            plan.get("target_column")
+                         )
+
+                    else:
+
+                        insight = interpreter.generate_business_insight(
+                            interpretation,
+                            plan.get("operation"),
+                            plan.get("target_column"),
+                            plan.get("analysis_type"),
+                            plan.get("group_by"),
+                            plan.get("filter")
+                        )
+
+                    st.subheader("Business Insight")
+                    st.write(insight)
 
                     if execution_result["output"]:
                         st.write("Output:")
@@ -164,6 +234,7 @@ if analyze_button:
                         analysis_type = analysis_plan.to_dict()["analysis_type"]
                         target_column = analysis_plan.to_dict()["target_column"]
                         group_by = analysis_plan.to_dict().get("group_by")
+                        time = analysis_plan.to_dict().get("time")
 
                         # Distribution → Histogram
                         if analysis_type == "distribution":
@@ -197,6 +268,26 @@ if analyze_button:
                                 result_df,
                                 "comparison",
                                 x_column=group_by,
+                                y_column=target_column
+                            )
+
+                            st.subheader("Visualization")
+                            st.pyplot(fig)
+
+                        # Trend → Line Chart
+                        elif analysis_type == "trend":
+
+                            result_df = execution_result["result"].reset_index()
+
+                            result_df.columns = [
+                                time,
+                                target_column
+                            ]
+
+                            fig = create_visualization(
+                                result_df,
+                                "trend",
+                                x_column=time,
                                 y_column=target_column
                             )
 

@@ -7,6 +7,12 @@ def validate_nlu(parsed_result, columns):
     if parsed_result["metric"] is None:
         errors.append("Metric is missing.")
 
+    if parsed_result["group_by"] is None and any(
+        word in parsed_result["question"].lower()
+        for word in ["by", "per", "each"]
+    ):
+        errors.append("Grouping column is missing.")
+
     if parsed_result["intent"] == "aggregation":
         if parsed_result["operation"] is None:
             errors.append("Aggregation operation is missing.")

@@ -13,6 +13,14 @@ def extract_metric(question, columns):
             question = question[:match.start()]
             break
 
+    # Prefer numeric columns as metrics
+    numeric_columns = ["sales", "quantity", "revenue", "profit", "amount"]
+
+    for column in columns:
+        if column.lower() in numeric_columns and column.lower() in question:
+            return column
+
+    # Fallback: return any column mentioned in the question
     for column in columns:
         if column.lower() in question:
             return column
@@ -26,16 +34,13 @@ def extract_group_by(question, columns):
     # Handle relationship questions
     if "between" in question and "and" in question:
 
-        parts = question.split("between", 1)[1]
-        parts = parts.split("and", 1)
+        relationship_part = question.split("between", 1)[1]
 
-        if len(parts) == 2:
-            second_part = parts[1]
+        first_part, second_part = relationship_part.split("and", 1)
 
-            for column in columns:
-                if column.lower() in second_part:
-                    return column
-
+        for column in columns:
+            if column.lower() in second_part:
+                 return column
     # Handle grouped questions
     group_words = ["by", "per", "each"]
 
@@ -80,7 +85,7 @@ def extract_operation(question):
 def extract_filter(question, columns):
     question = question.lower()
 
-    filter_words = ["where", "for", "in", "with"]
+    filter_words = ["where", "for", "in", "with", "of"]
 
     for word in filter_words:
 
@@ -92,6 +97,22 @@ def extract_filter(question, columns):
         if match:
 
             remaining_text = question[match.end():].strip()
+
+            # "of" should be treated as a filter
+            # only when a filter column follows it.
+            if word == "of":
+
+                has_filter_column = any(
+                    re.search(
+                        r"\b" + re.escape(column.lower()) + r"\b",
+                        remaining_text
+                    )
+                    and column.lower() != extract_metric(question, columns).lower()
+                    for column in columns
+                )
+
+                if not has_filter_column:
+                    continue
 
             # Case 1:
             # Filter column is explicitly mentioned.
@@ -147,10 +168,26 @@ def extract_filter(question, columns):
     return None
 
 
-def extract_time(question):
-    match = re.search(r"\b(19|20)\d{2}\b", question)
+def extract_time(question, columns):
+    time_keywords = [
+        "date",
+        "time",
+        "year",
+        "month",
+        "day"
+    ]
 
-    if match:
-        return match.group()
+    question_lower = question.lower()
+
+    for column in columns:
+        column_lower = column.lower()
+
+        if column_lower in time_keywords:
+            return column
+
+        if column_lower in question_lower and any(
+            keyword in column_lower for keyword in time_keywords
+        ):
+            return column
 
     return None

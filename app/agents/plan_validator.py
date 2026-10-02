@@ -10,6 +10,10 @@ def validate_analysis_plan(plan):
         if plan.target_column is None or plan.operation is None:
             return False
 
+    if plan.analysis_type == "trend":
+        if plan.target_column is None or plan.time is None:
+            return False
+
     valid_types = [
         "aggregation",
         "grouped_aggregation",

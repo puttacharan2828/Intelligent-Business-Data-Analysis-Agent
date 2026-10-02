@@ -19,10 +19,6 @@ def generate_code(plan):
             f'== "{filter_value.lower()}"]'
         )
 
-    # Apply time filter
-    if time is not None:
-        data = f'{data}[{data}["Year"] == {time}]'
-
     # ---------------------------------
     # Summary
     # ---------------------------------
@@ -115,6 +111,18 @@ def generate_code(plan):
         else:
 
             raise ValueError("Unsupported aggregation operation.")
+
+    elif analysis_type == "trend":
+
+        if time is None:
+
+            raise ValueError(
+                "Trend analysis requires a time column."
+            )
+
+        return (
+            f'result = {data}.groupby("{time}")["{target_column}"].sum()'
+        )
 
     # ---------------------------------
     # Relationship

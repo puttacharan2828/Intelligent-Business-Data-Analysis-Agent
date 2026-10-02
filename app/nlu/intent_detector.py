@@ -1,7 +1,7 @@
 import re
 
 INTENT_KEYWORDS = {
-    "aggregation": ["total", "sum", "average", "mean", "maximum", "minimum"],
+    "aggregation": ["total", "sum", "average", "mean", "maximum", "minimum","highest","lowest","count","how many"],
     "comparison": ["compare", "comparison", "versus", "vs", "difference"],
     "trend": ["trend", "over time", "change", "growth", "decline"],
     "distribution": ["distribution", "spread", "frequency"],

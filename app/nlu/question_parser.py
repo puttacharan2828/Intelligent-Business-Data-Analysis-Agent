@@ -13,9 +13,10 @@ def parse_question(question, columns):
     group_by = extract_group_by(question, columns)
     operation = extract_operation(question)
     filter_condition = extract_filter(question, columns)
-    time = extract_time(question)
+    time = extract_time(question, columns)
 
     return {
+        "question": question,
         "intent": intent,
         "metric": metric,
         "operation": operation,
