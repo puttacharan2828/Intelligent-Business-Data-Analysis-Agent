@@ -148,7 +148,9 @@ if analyze_button:
                 st.session_state.conversation_memory.add(
                     context["resolved_question"],
                     agent_state.execution_result["result"],
-                    agent_state.interpretation
+                    agent_state.interpretation,
+                    context["is_follow_up"],
+                    context["original_question"]
                 )
 
                 if agent_state.visualization is not None:
@@ -185,3 +187,44 @@ if analyze_button:
         st.warning(
             "Please enter a question first."
         )
+
+
+st.header("3. Conversation Memory")
+
+if st.button("Clear Conversation"):
+    st.session_state.conversation_memory.clear()
+    st.rerun()
+
+memory_history = st.session_state.conversation_memory.get_history()
+
+if memory_history:
+
+    for index, entry in enumerate(memory_history, start=1):
+
+        st.write(f"### Conversation {index}")
+
+        st.write(
+            "Question:",
+            entry["question"]
+        )
+
+        st.write(
+            "Result:",
+            entry["result"]
+        )
+
+        st.write(
+            "Interpretation:",
+            entry["interpretation"]
+        )
+
+        if entry["is_follow_up"]:
+
+            st.write(
+                "Follow-up:",
+                entry["original_question"]
+            )
+
+else:
+
+    st.write("No conversation history yet.")

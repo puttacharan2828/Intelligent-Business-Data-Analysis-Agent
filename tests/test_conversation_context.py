@@ -77,6 +77,29 @@ class TestConversationContext(unittest.TestCase):
             "What is total Sales?"
         )
 
+    def test_and_follow_up(self):
+
+        memory = ConversationMemory()
+
+        memory.add(
+            "What is total Sales by Category?",
+            125000,
+            "Highest category is Hyderabad."
+        )
+
+        context = ConversationContext(memory)
+
+        result = context.resolve_question(
+            "And Profit?"
+        )
+
+        self.assertTrue(result["is_follow_up"])
+
+        self.assertEqual(
+            result["resolved_question"],
+            "What is total Profit by Category?"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

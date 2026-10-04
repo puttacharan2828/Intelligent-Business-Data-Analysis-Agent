@@ -85,6 +85,34 @@ class TestContextResolver(unittest.TestCase):
             "Show the distribution of Quantity."
         )
 
+    def test_replace_metric_with_profit(self):
+
+        resolver = ContextResolver()
+
+        result = resolver.resolve(
+            "What about Profit?",
+            "What is total Sales by Category?"
+        )
+
+        self.assertEqual(
+            result,
+            "What is total Profit by Category?"
+        )
+
+    def test_replace_metric_in_distribution_question(self):
+
+        resolver = ContextResolver()
+
+        result = resolver.resolve(
+            "What about Quantity?",
+            "What is the distribution of Sales?"
+        )
+
+        self.assertEqual(
+            result,
+            "What is the distribution of Quantity?"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

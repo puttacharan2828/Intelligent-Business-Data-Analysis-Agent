@@ -1,5 +1,5 @@
-from agents.analysis_plan import AnalysisPlan
-from agents.analysis_types import determine_analysis_type
+from .analysis_plan import AnalysisPlan
+from .analysis_types import determine_analysis_type
 
 
 def create_analysis_plan(nlu_result):

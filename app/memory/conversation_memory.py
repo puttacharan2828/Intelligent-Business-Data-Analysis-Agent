@@ -2,11 +2,21 @@ class ConversationMemory:
     def __init__(self):
         self.history = []
 
-    def add(self, question, result=None, interpretation=None):
+    def add(
+    self,
+    question,
+    result=None,
+    interpretation=None,
+    is_follow_up=False,
+    original_question=None
+):
         entry = {
             "question": question,
             "result": result,
-            "interpretation": interpretation
+            "interpretation": interpretation,
+            "is_follow_up": is_follow_up,
+            "original_question": original_question
+
         }
 
         self.history.append(entry)

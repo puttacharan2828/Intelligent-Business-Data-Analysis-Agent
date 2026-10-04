@@ -14,4 +14,6 @@ class AgentState:
         self.business_insight = None
 
         self.error = None
+        self.error_type = None
+        self.specific_error_type = None
         self.recovery_attempted = False

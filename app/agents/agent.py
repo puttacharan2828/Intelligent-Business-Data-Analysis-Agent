@@ -1,11 +1,22 @@
-from agents.agent_state import AgentState
-from nlu.question_parser import parse_question
-from agents.planner import create_analysis_plan
-from agents.code_generator import generate_code
-from agents.code_validator import validate_code
-from analysis.executor import execute_code
-from visualization.visualizer import create_visualization
-from agents.interpreter import ResultInterpreter
+try:
+    from .agent_state import AgentState
+    from ..nlu.question_parser import parse_question
+    from .planner import create_analysis_plan
+    from .code_generator import generate_code
+    from .code_validator import validate_code
+    from ..analysis.executor import execute_code
+    from ..visualization.visualizer import create_visualization
+    from .interpreter import ResultInterpreter
+
+except ImportError:
+    from agents.agent_state import AgentState
+    from nlu.question_parser import parse_question
+    from agents.planner import create_analysis_plan
+    from agents.code_generator import generate_code
+    from agents.code_validator import validate_code
+    from analysis.executor import execute_code
+    from visualization.visualizer import create_visualization
+    from agents.interpreter import ResultInterpreter
 
 class AnalysisAgent:
     def __init__(self):
@@ -23,8 +34,17 @@ class AnalysisAgent:
                 "Analysis failed because the generated code "
                 "did not produce a result."
             )
+        elif execution["error_type"] == "KeyError":
+
+            columns = self.state.dataset.columns.tolist()
+
+            self.state.error = (
+                "Analysis failed because the generated code "
+                "used a column that does not exist. "
+                f"Available columns: {', '.join(columns)}."
+            )
         else:
-                 self.state.error = execution["error"]
+            self.state.error = execution["error"]
 
         return False
 
@@ -46,11 +66,13 @@ class AnalysisAgent:
             )
         except Exception as e:
             self.state.error = str(e)
+            self.state.error_type = "generation_error"
             self.state.recovery_attempted = True
             return self.state
         
         if not validate_code(self.state.generated_code):
             self.state.error = "Generated code failed validation."
+            self.state.error_type = "validation_error"
             return self.state
 
         execution = execute_code(
@@ -61,8 +83,24 @@ class AnalysisAgent:
         self.state.execution_result = execution
 
         if not execution["success"]:
+            self.state.error_type = "execution_error"
+            self.state.specific_error_type = execution["error_type"]
+
             self.recover(execution)
-            return self.state
+
+            retry_execution = execute_code(
+                self.state.generated_code,
+                self.state.dataset
+            )
+
+            self.state.execution_result = retry_execution
+
+            if not retry_execution["success"]:
+                self.state.specific_error_type = retry_execution["error_type"]
+                self.recover(retry_execution)
+                return self.state
+
+            execution = retry_execution
         
         self.state.interpretation = self.interpreter.interpret(
             execution["result"]

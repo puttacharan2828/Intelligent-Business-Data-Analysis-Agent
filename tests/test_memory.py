@@ -97,6 +97,26 @@ class TestConversationMemory(unittest.TestCase):
         self.assertEqual(memory.get_history(), [])
         self.assertIsNone(memory.get_last())
 
+    def test_add_stores_follow_up_information(self):
+
+        memory = ConversationMemory()
+
+        memory.add(
+            "What is total Quantity by Category?",
+            100,
+            "Highest category has 50.",
+            is_follow_up=True,
+            original_question="What about Quantity?"
+        ) 
+
+        last = memory.get_last()
+
+        self.assertTrue(last["is_follow_up"])
+        self.assertEqual(
+            last["original_question"],
+            "What about Quantity?"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
