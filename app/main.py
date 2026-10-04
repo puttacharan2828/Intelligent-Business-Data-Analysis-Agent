@@ -1,12 +1,20 @@
 import streamlit as st
 from data.understanding import understand_dataset
 from agents.agent import AnalysisAgent
+from memory.conversation_memory import ConversationMemory
+from memory.conversation_context import ConversationContext
 
 from config import APP_NAME, APP_ICON, PAGE_LAYOUT
 from data.loader import load_dataset
 
 
 agent = AnalysisAgent()
+if "conversation_memory" not in st.session_state:
+    st.session_state.conversation_memory = ConversationMemory()
+
+conversation_context = ConversationContext(
+    st.session_state.conversation_memory
+)
 
 
 st.set_page_config(
@@ -99,8 +107,16 @@ if analyze_button:
 
         if uploaded_file is not None:
 
+            context = conversation_context.resolve_question(question)
+
+            if context["is_follow_up"]:
+                st.info(
+                    f"Follow-up detected. Interpreting as: "
+                    f"{context['resolved_question']}"
+                )
+
             agent_state = agent.run(
-                question,
+                context["resolved_question"],
                 df,
                 df.columns.tolist()
             )
@@ -129,6 +145,12 @@ if analyze_button:
                 st.subheader("Business Insight")
                 st.write(agent_state.business_insight)
 
+                st.session_state.conversation_memory.add(
+                    context["resolved_question"],
+                    agent_state.execution_result["result"],
+                    agent_state.interpretation
+                )
+
                 if agent_state.visualization is not None:
 
                     st.subheader("Visualization")
@@ -150,7 +172,7 @@ if analyze_button:
                     st.write("Execution Result:")
                     st.write(
                         agent_state.execution_result["result"]
-                    )
+                    )                
 
         else:
 
